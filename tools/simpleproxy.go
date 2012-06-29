@@ -120,7 +120,7 @@ func handleConnection(proxy proxyBehavior,
 // Startup and main client acceptance loop
 func main() {
 	if len(os.Args) != 3 {
-		fmt.Printf("Usage: dog DATABASE_URL\n")
+		fmt.Printf("Usage: simpleproxy LISTENADDR SERVERADDR\n")
 		os.Exit(1)
 	}
 
