@@ -7,6 +7,8 @@ import (
 	"net"
 	"os"
 	"strings"
+	_ "github.com/bmizerany/pq"
+	"database/sql"
 )
 
 // Automatically chooses between unix sockets and tcp sockets for
@@ -50,7 +52,7 @@ func (pbh *proxyBehavior) start(
 	return errch
 }
 
-var simpleProxy = proxyBehavior{
+var dog = proxyBehavior{
 	toFrontend: func(client femebe.MessageStream,
 		server femebe.MessageStream, errch chan error) {
 		for {
@@ -85,12 +87,72 @@ var simpleProxy = proxyBehavior{
 	},
 }
 
+func lookupServer(database string) (serverAddr string, err error) {
+	db, _ := sql.Open("postgres", "")
+
+	fmt.Printf("DBNAME: %v", database)
+	r, err := db.Query("SELECT serveraddr FROM databases WHERE dbname=$1", database)
+	if err != nil {
+		fmt.Printf("No query: %v", err)
+		return "", err
+	}
+
+	defer r.Close()
+
+	if !r.Next() {
+		fmt.Printf("No next: %v", err)
+		return "", nil
+	}
+
+	var v string
+	
+	err = r.Scan(&v)
+	if (err != nil) {
+		fmt.Printf("No scan")
+		return "", nil
+	}
+	
+	return v, nil
+}
+
+func findServer(client femebe.MessageStream) (server femebe.MessageStream, err error){
+	msg, err := client.Next()
+	if err != nil {
+		return nil, err
+	}
+
+	var dbname string
+
+	if femebe.IsStartupMessage(msg) {
+		startupMsg := femebe.ReadStartupMessage(msg)
+		fmt.Println("Got startup message:")
+		for key, value := range startupMsg.Params {
+			fmt.Printf("\t%v: %v\n", key, value)			
+		}
+		dbname = startupMsg.Params["database"]
+		fmt.Printf("dbname: %v\n", dbname) 
+	}
+
+	serverAddr, _ := lookupServer(dbname)
+
+	fmt.Printf("serverAddr: %v\n", serverAddr)
+
+	serverConn, err := autoDial(serverAddr)
+	if err != nil {
+		fmt.Printf("Could not connect to server: %v\n", err)
+	}
+
+	server = femebe.NewMessageStream("Server", serverConn, serverConn)
+	server.Send(msg)
+
+	return server, nil
+}
+
 // Generic connection handler
 //
 // This redelegates to more specific proxy handlers that contain the
 // main proxy loop logic.
-func handleConnection(proxy proxyBehavior,
-	clientConn net.Conn, serverAddr string) {
+func handleConnection(proxy proxyBehavior, clientConn net.Conn) {
 	var err error
 
 	// Log disconnections
@@ -106,21 +168,17 @@ func handleConnection(proxy proxyBehavior,
 
 	c := femebe.NewMessageStream("Client", clientConn, clientConn)
 
-	serverConn, err := autoDial(serverAddr)
-	if err != nil {
-		fmt.Printf("Could not connect to server: %v\n", err)
-	}
+	s, err := findServer(c)
+	if (err != nil) { return }
 
-	b := femebe.NewMessageStream("Server", serverConn, serverConn)
-
-	done := proxy.start(c, b)
+	done := proxy.start(c, s)
 	err = <-done
 }
 
 // Startup and main client acceptance loop
 func main() {
 	if len(os.Args) != 3 {
-		fmt.Printf("Usage: dog DATABASE_URL\n")
+		fmt.Printf("Usage: dog\n")
 		os.Exit(1)
 	}
 
@@ -138,7 +196,7 @@ func main() {
 			continue
 		}
 
-		go handleConnection(simpleProxy, conn, os.Args[2])
+		go handleConnection(dog, conn)
 	}
 
 	fmt.Println("simpleproxy quits successfully")

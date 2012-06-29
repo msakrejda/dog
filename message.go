@@ -43,6 +43,10 @@ func IsReadyForQuery(msg *Message) bool {
 	return msg.msgType == 'Z'
 }
 
+func IsStartupMessage(msg *Message) bool {
+	return msg.msgType == '\000'
+}
+
 type FieldDescription struct {
 	name       string
 	tableOid   int32
@@ -183,7 +187,7 @@ func ReadRowDescription(msg *Message) *RowDescription {
 }
 
 type StartupMessage struct {
-	params map[string]string
+	Params map[string]string
 }
 
 func ReadStartupMessage(msg *Message) *StartupMessage {
