@@ -140,6 +140,20 @@ func NewQuery(query string) *Message {
 	return &Message{'Q', buff.Bytes()}
 }
 
+type Query struct {
+	Query string
+}
+
+func IsQuery(msg *Message) bool {
+	return msg.msgType == 'Q'
+}
+
+func ReadQuery(msg *Message) *Query {
+	b := bytes.NewBuffer(msg.payload)
+	query := ReadCString(b)
+	return &Query{query}
+}
+
 func encodeValue(buff *bytes.Buffer, val interface{}, format EncFmt) {
 	switch val.(type) {
 	case int16:

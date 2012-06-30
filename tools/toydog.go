@@ -132,6 +132,76 @@ func proxyHandler(clientConn net.Conn, rt *RoutingTable) {
 	err = <-done
 }
 
+
+type QueryValue interface {
+	Value() interface{}
+}
+
+type QueryStr string
+
+func (str QueryStr) Value() interface{} {
+	return str
+}
+
+func adminHandler(clientConn net.Conn, rt *RoutingTable) {
+	commandCh := make(chan string)
+
+	var simpleProxy = proxyBehavior{
+		toFrontend: func(client femebe.MessageStream,
+			server femebe.MessageStream, errch chan error) {
+			for {
+				command := <- commandCh
+				
+				if command == "dump routing table" {
+					data := make([][]QueryValue, 2)
+					for key, value := range rt.table {
+						data = append(data, []QueryValue{&QueryStr{key}, &QueryStr{value}})
+					}
+					SendDataSet(client, []string{"key","value"}, data)
+				} else {
+					fmt.Printf("Ignoring unknown command %v", command)
+				}
+
+			}
+		},
+		toServer: func(client femebe.MessageStream,
+			server femebe.MessageStream, errch chan error) {
+			for {
+				msg, err := client.Next()
+				if femebe.IsQuery(msg) {
+					q := femebe.ReadQuery(msg)
+					commandCh <- q.Query
+				}
+			}
+		},
+	}
+
+	var err error
+
+}
+
+
+func SendDataSet(stream femebe.MessageStream, colnames []string, rows [][]QueryValue) {
+	rowLen :=  len(colnames)
+	fieldDescs := make([]femebe.FieldDescription, len(colnames))
+	for i, name := range colnames {
+		fieldDescs[i] = femebe.NewField(name, femebe.STRING)
+	}
+	rowDesc := femebe.NewRowDescription(fieldDescs)
+	stream.Send(rowDesc)
+	for _, row := range rows {
+		if len(row) != rowLen {
+			panic("oh snap!")
+		}
+		rowData := make([]interface{}, rowLen)
+		for i, item := range row {
+			rowData[i] = item.Value()
+		}
+		stream.Send(femebe.NewDataRow(rowData))
+	}
+	stream.Send(femebe.NewCommandComplete(fmt.Sprintf("SELECT %v", rowLen)))
+}
+
 type Acceptor func(ln net.Conn)
 
 func AcceptorLoop(ln net.Listener, a Acceptor, done chan bool) {
@@ -171,6 +241,8 @@ func (r *RoutingTable) Route(dbname string) (addr string) {
 	return r.table[dbname]
 }
 
+
+
 // Startup and main client acceptance loop
 func main() {
 	if len(os.Args) != 2 {
@@ -178,25 +250,41 @@ func main() {
 		os.Exit(1)
 	}
 
-	ln, err := autoListen(os.Args[1])
-	if ln != nil {
-		defer ln.Close()
+	listen := func(addr string) net.Listener {
+		ln, err := autoListen(addr)
+		if err != nil {
+			fmt.Printf("Could not listen on address: %v\n", err)
+			os.Exit(1)
+		}
+		return ln		
 	}
-	if err != nil {
-		fmt.Printf("Could not listen on address: %v\n", err)
-		os.Exit(1)
+	proxyLn := listen(os.Args[1])
+	if proxyLn != nil {
+		defer proxyLn.Close()
+	}
+
+	adminLn := listen("/tmp/.s.PGSQL.45432")
+	if adminLn != nil {
+		defer adminLn.Close()
 	}
 
 	rt := NewRoutingTable()
 	rt.SetRoute("fdr", "/var/run/postgresql/.s.PGSQL.5432")
 
 	done := make(chan bool)
-	go AcceptorLoop(ln,
+	go AcceptorLoop(proxyLn,
 		func(conn net.Conn) {
 			proxyHandler(conn, rt)
 		},
 		done)
 
+	go AcceptorLoop(proxyLn,
+		func(conn net.Conn) {
+			adminHandler(conn, rt)
+		},
+		done)
+
+	_ = <-done
 	_ = <-done
 	fmt.Println("simpleproxy quits successfully")
 	return
