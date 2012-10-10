@@ -1,6 +1,7 @@
 package dogconf
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -70,9 +71,53 @@ func expect(s *Scanner, tokTyp TokenType) (*Token, error) {
 	return tok, nil
 }
 
-func ParseRequest(r io.Reader) (*RequestSyntax, error) {
+// Marker type as to be able to non-ambiguously recover a panic from a
+// failed scan.  The scanner is included as to retain position
+// information.
+type ErrScanner struct {
+	error
+	BaseMessage string
+	Scanner     *Scanner
+}
+
+func ParseRequest(r io.Reader) (rs *RequestSyntax, err error) {
 	var s = new(Scanner)
 	s.Init(r)
+
+	// Convert only ErrScanner panics into regular return values.
+	defer func() {
+		if x := recover(); x != nil {
+			if e, ok := x.(ErrScanner); ok {
+				rs = nil
+				err = e
+			} else {
+				panic(x)
+			}
+		}
+	}()
+
+	// Set up error handler for scanner.  This must be done
+	// *after* Init() on the Scanner, or else it'll be overwritten
+	// into oblivion.
+	s.Error = func(s *Scanner, msg string) {
+		// Blow up the entire scanning process if something
+		// goes awry, at the very first incident.  It could be
+		// useful to continue and accrue the errors rather
+		// than blow up immediately, but future errors in the
+		// lexer after a failed lex are questionable at best.
+		pos := s.Position
+		if !pos.IsValid() {
+			pos = s.Pos()
+		}
+
+		embellished := fmt.Sprintf("%s: %s", pos, msg)
+		panic(ErrScanner{
+			error:       errors.New(embellished),
+			BaseMessage: msg,
+			Scanner:     s,
+		})
+	}
+
 	return parseRequest(s)
 }
 
