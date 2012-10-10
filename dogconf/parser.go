@@ -139,10 +139,6 @@ func parseRequest(s *Scanner) (rs *RequestSyntax, err error) {
 	if err != nil {
 		return nil, err
 	}
-	_, err = expect(s, LBrace)
-	if err != nil {
-		return nil, err
-	}
 
 	// Only handle exactly one action per RequestSyntax for now
 	action, err := parseAction(s)
@@ -207,6 +203,11 @@ func parseRouteSpec(s *Scanner) (SpecSyntax, error) {
 }
 
 func parseAction(s *Scanner) (a ActionSyntax, err error) {
+	_, err = expect(s, LBrace)
+	if err != nil {
+		return nil, err
+	}
+
 	tok, err := expect(s, Ident)
 	if err != nil {
 		return nil, err
@@ -219,24 +220,36 @@ func parseAction(s *Scanner) (a ActionSyntax, err error) {
 			return nil, err
 		}
 
-		return &PatchActionSyntax{PatchProps: props}, nil
+		a = &PatchActionSyntax{PatchProps: props}
+		goto out
 	case "create":
 		props, err := parseProps(s)
 		if err != nil {
 			return nil, err
 		}
 
-		return &CreateActionSyntax{CreateProps: props}, nil
+		a = &CreateActionSyntax{CreateProps: props}
+		goto out
 	case "get":
-		return &GetActionSyntax{GetToken: tok}, nil
+		a = &GetActionSyntax{GetToken: tok}
+		goto out
 	case "delete":
-		return &DeleteActionSyntax{DeleteToken: tok}, nil
+		a = &DeleteActionSyntax{DeleteToken: tok}
+		goto out
 	default:
 		return nil, fmt.Errorf("Expected 'patch', 'create', "+
 			"'get', or 'delete'; got %v", tok)
 	}
 
-	panic("Uncovered conditions")
+	panic("Switch does not cover all cases when it should")
+
+out:
+	_, err = expect(s, RBrace)
+	if err != nil {
+		return nil, err
+	}
+
+	return a, nil
 }
 
 // Parses a series of tokens like:
