@@ -27,11 +27,12 @@ type Byteser interface {
 
 // Open a new resultFile, failing the test should that not be
 // possible.
-func newResultFile(t *testing.T, path string) *resultFile {
+func newResultFile(path string) (*resultFile, error) {
 	destFile, err := os.OpenFile(path,
 		os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0666)
 	if err != nil {
-		t.Fatalf("Could not open results file at %v: %v",
+		return nil, stable.Errorf(
+			"Could not open results file at %v: %v",
 			path, err)
 	}
 
@@ -41,30 +42,44 @@ func newResultFile(t *testing.T, path string) *resultFile {
 	rf.Closer = rf.diskOut
 	rf.Byteser = &rf.buf
 
-	return &rf
+	return &rf, nil
 }
 
-func astRegress(t *testing.T, name string, input string) {
+func astRegress(name string, input string) error {
 	// Set up destination file to dump test results
 	destFileName := filepath.Join("ast_regress", "results", name) + ".out"
-	resultOut := newResultFile(t, destFileName)
+	resultOut, err := newResultFile(destFileName)
+	if err != nil {
+		return err
+	}
+
 	defer resultOut.Close()
 
 	// Write the input to the top of the output file because that
 	// makes it easier to skim the corresponding results
 	// immediately after it.
-	_, err := io.WriteString(resultOut, "INPUT<\n"+input+"\n\n")
+	_, err = io.WriteString(resultOut, "INPUT<\n"+input+"\n\n")
 	if err != nil {
-		t.Fatalf("Could echo test input to results file: %v", err)
+		return stable.Errorf(
+			"Could echo test input to results file: %v", err)
 	}
 
-	result, err := ParseRequest(bytes.NewBuffer([]byte(input)))
+	// Run the parser, rendering either the generated AST or the
+	// resultant error as a string.
+	render := func() string {
+		result, err := ParseRequest(bytes.NewBuffer([]byte(input)))
+		if err != nil {
+			return stable.Sprintf("%v\n", err)
+		}
 
-	// Run the parser
-	formatted := stable.Sprintf("%#v\n", result)
-	_, err = io.WriteString(resultOut, "OUTPUT>\n"+formatted)
+		return stable.Sprintf("%#v\n", result)
+	}()
+
+	// Write
+	_, err = io.WriteString(resultOut, "OUTPUT>\n"+render)
 	if err != nil {
-		t.Fatalf("Could write test output to results file: %v", err)
+		return stable.Errorf(
+			"Could write test output to results file: %v", err)
 	}
 
 	// Open the expected-output file
@@ -72,7 +87,8 @@ func astRegress(t *testing.T, name string, input string) {
 		"ast_regress", "expected", name) + ".out"
 	expectedFile, err := os.OpenFile(expectedFileName, os.O_RDONLY, 0666)
 	if err != nil {
-		t.Fatalf("Could not open expected output file at %v: %v",
+		return stable.Errorf(
+			"Could not open expected output file at %v: %v",
 			expectedFileName, err)
 	}
 	defer expectedFile.Close()
@@ -91,56 +107,105 @@ func astRegress(t *testing.T, name string, input string) {
 	n, err := io.ReadAtLeast(expectedFile, expectedBytes, len(expectedBytes))
 	switch err {
 	case io.EOF:
-		t.Fatalf("Expected output file is empty: %v", expectedFile)
+		return stable.Errorf(
+			"Expected output file is empty: %v", expectedFile)
 
 	case io.ErrUnexpectedEOF:
 		// Check if the read input has the same size and
 		// contents.  The test must succeed if it does.
 		if n != len(resultBytes) ||
 			!bytes.Equal(resultBytes, expectedBytes[0:n]) {
-			t.Fatal("Difference between results and expected")
+			return stable.Errorf(
+				"Difference between results and expected: %v",
+				name)
 		}
 
-		// Test success
+		return nil
 	case nil:
-		t.Fatal("Difference between results and expected")
+		return stable.Errorf(
+			"Difference between results and expected: %v", name)
 	default:
-		t.Fatalf("ast_regress bug: unexpected error %v", err)
+		return stable.Errorf(
+			"ast_regress bug: unexpected error %v", err)
+	}
+
+	panic("Non-covering switch")
+}
+
+func astRegressFail(t *testing.T, name string, input string) {
+	err := astRegress(name, input)
+	if err != nil {
+		t.Log(err)
+		t.Fail()
 	}
 }
 
 func TestDeleteAll(t *testing.T) {
-	astRegress(t, "delete_all", `[route all [delete]]`)
+	astRegressFail(t, "delete_all", `[route all [delete]]`)
 }
 
 func TestDeleteAt(t *testing.T) {
-	astRegress(t, "delete_at", `[route 'foo' @ 42 [delete]]`)
+	astRegressFail(t, "delete_at", `[route 'foo' @ 42 [delete]]`)
 }
 
 func TestCreateRouteAtTime(t *testing.T) {
-	astRegress(t, "create_route_at",
+	astRegressFail(t, "create_route_at",
 		`[route 'bar' @ 42 [create [addr='123.123.123.125:5445']]]`)
 }
 
 func TestCreateRoute(t *testing.T) {
-	astRegress(t, "create_route",
+	astRegressFail(t, "create_route",
 		`[route 'bar' [create [addr='123.124.123.125:5445']]]`)
 }
 
 func TestPatchRoute(t *testing.T) {
-	astRegress(t, "patch_at_address",
+	astRegressFail(t, "patch_at_address",
 		`[route 'bar' @ 1 [patch [addr='123.123.123.125:5445']]]`)
 }
 
 func TestGetRoute(t *testing.T) {
-	astRegress(t, "get_one_route", `[route 'bar' [get]]`)
+	astRegressFail(t, "get_one_route", `[route 'bar' [get]]`)
 }
 
 func TestGetAllRoutes(t *testing.T) {
-	astRegress(t, "get_all_routes", `[route all [get]]`)
+	astRegressFail(t, "get_all_routes", `[route all [get]]`)
+}
+
+func TestGetOcnRoute(t *testing.T) {
+	// This is bogus semantically, but it does generate a valid
+	// syntax tree.
+	astRegressFail(t, "get_ocn_route", `[route 'bar' @ 137 [get]]`)
 }
 
 func TestQuoting(t *testing.T) {
-	astRegress(t, "quoting",
+	astRegressFail(t, "quoting",
 		`[route '!xp' @ 5 [patch [password='x'',"',lock='true']]]`)
+}
+
+// Onto some negative tests, for input that should fail in particular
+// ways.
+
+func TestUnterminated(t *testing.T) {
+	// Note the two missing ']]' at the end
+	astRegressFail(t, "unterminated_action", `[route 'bar' @ 137 [delete`)
+
+	// Note the missing ']' at the end.  This parses incorrectly
+	astRegressFail(t, "unterminated_toplevel", `[route 'bar' @ 137 [delete]`)
+
+	// Unterminated string
+	astRegressFail(t, "unterminated_string", `[route 'bar @ 137 [delete]`)
+}
+
+func TestExtraBrackets(t *testing.T) {
+	// Extra surrounding set of brackets around all
+	astRegressFail(t, "extra_brackets_top_level",
+		`[[route 'bar' @ 137 [delete]]]`)
+
+	// Extra surrounding brackets around action
+	astRegressFail(t, "extra_brackets_action",
+		`[route 'bar' @ 137 [[delete]]]`)
+
+	// Extra brackets around the target
+	astRegressFail(t, "extra_brackets_target",
+		`[route ['bar' @ 137] [delete]]`)
 }

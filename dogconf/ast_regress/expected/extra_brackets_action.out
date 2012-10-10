@@ -1,0 +1,5 @@
+INPUT<
+[route 'bar' @ 137 [[delete]]]
+
+OUTPUT>
+Expected token 'Ident'; got '[ at 1:22'

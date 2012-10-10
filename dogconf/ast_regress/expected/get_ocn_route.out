@@ -1,0 +1,42 @@
+INPUT<
+[route 'bar' @ 137 [get]]
+
+OUTPUT>
+&dogconf.RequestSyntax{
+ Spec:dogconf.TargetOcnSpecSyntax{
+  TargetOneSpecSyntax:dogconf.TargetOneSpecSyntax{
+   What:&dogconf.Token{
+     Lexeme:"'bar'",
+     Type:8,
+     Pos:dogconf.Position{
+      Filename:"",
+      Offset:12,
+      Line:1,
+      Column:13
+     }
+    }
+  },
+  Ocn:&dogconf.Token{
+    Lexeme:"137",
+    Type:7,
+    Pos:dogconf.Position{
+     Filename:"",
+     Offset:18,
+     Line:1,
+     Column:19
+    }
+   }
+ },
+ Action:&dogconf.GetActionSyntax{
+   GetToken:&dogconf.Token{
+     Lexeme:"get",
+     Type:6,
+     Pos:dogconf.Position{
+      Filename:"",
+      Offset:23,
+      Line:1,
+      Column:24
+     }
+    }
+  }
+}

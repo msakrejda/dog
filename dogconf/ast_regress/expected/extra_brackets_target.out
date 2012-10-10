@@ -1,0 +1,5 @@
+INPUT<
+[route ['bar' @ 137] [delete]]
+
+OUTPUT>
+Expected token 'String'; got '[ at 1:9'

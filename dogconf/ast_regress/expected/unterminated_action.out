@@ -1,0 +1,5 @@
+INPUT<
+[route 'bar' @ 137 [delete
+
+OUTPUT>
+Expected token ']'; got 'EOF at 1:27'
