@@ -1,5 +1,5 @@
 INPUT<
-[route '!xp' @ 5 [patch [password='x'',"',lock='true']]]
+[route '!xp' @ 5 [patch [dbnameIn='x'',"',lock='true']]]
 
 OUTPUT>
 &dogconf.RequestSyntax{
@@ -40,6 +40,25 @@ Action:&dogconf.PatchActionSyntax{
  },
  PatchProps:map[*dogconf.Token]*dogconf.Token{
   &dogconf.Token{
+   Lexeme:"dbnameIn",
+   Type:6,
+   Pos:dogconf.Position{
+    Filename:"",
+    Offset:33,
+    Line:1,
+    Column:34
+   }
+  }:&dogconf.Token{
+   Lexeme:"'x'',\"'",
+   Type:8,
+   Pos:dogconf.Position{
+    Filename:"",
+    Offset:41,
+    Line:1,
+    Column:42
+   }
+  },
+  &dogconf.Token{
    Lexeme:"lock",
    Type:6,
    Pos:dogconf.Position{
@@ -56,25 +75,6 @@ Action:&dogconf.PatchActionSyntax{
     Offset:53,
     Line:1,
     Column:54
-   }
-  },
-  &dogconf.Token{
-   Lexeme:"password",
-   Type:6,
-   Pos:dogconf.Position{
-    Filename:"",
-    Offset:33,
-    Line:1,
-    Column:34
-   }
-  }:&dogconf.Token{
-   Lexeme:"'x'',\"'",
-   Type:8,
-   Pos:dogconf.Position{
-    Filename:"",
-    Offset:41,
-    Line:1,
-    Column:42
    }
   }
  }

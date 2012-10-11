@@ -143,7 +143,7 @@ func TestGetOcnRoute(t *testing.T) {
 
 func TestQuoting(t *testing.T) {
 	astRegressFail(t, "quoting",
-		`[route '!xp' @ 5 [patch [password='x'',"',lock='true']]]`)
+		`[route '!xp' @ 5 [patch [dbnameIn='x'',"',lock='true']]]`)
 }
 
 // Onto some negative tests, for input that should fail in particular

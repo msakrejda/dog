@@ -296,7 +296,7 @@ func parseProps(s *Scanner) (map[*Token]*Token, error) {
 		// multi-purpose, it is best for validity-checking
 		// code to move to the semantic analyzer.
 		switch k := keyTok.Lexeme; k {
-		case "addr", "lock", "user", "password":
+		case "addr", "lock", "dbnameIn", "dbnameRewritten":
 			_, present := props[keyTok]
 			if !present {
 				props[keyTok] = valTok
