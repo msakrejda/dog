@@ -1011,7 +1011,7 @@ BigSwitch:
 		// with cyclic data structures)
 		if v != 0 {
 			p.buf.WriteByte('&')
-			p.printValue(f.Elem(), verb, plus, goSyntax, depth+1)
+			p.printValue(f.Elem(), verb, plus, goSyntax, depth)
 			break BigSwitch
 		} else {
 			p.buf.Write(nilBytes)
