@@ -16,6 +16,16 @@ Spec:&dogconf.TargetOneSpecSyntax{
  }
 },
 Action:&dogconf.GetActionSyntax{
+ Blamer:&dogconf.Token{
+  Lexeme:"get",
+  Type:6,
+  Pos:dogconf.Position{
+   Filename:"",
+   Offset:17,
+   Line:1,
+   Column:18
+  }
+ },
  GetToken:&dogconf.Token{
   Lexeme:"get",
   Type:6,

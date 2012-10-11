@@ -10,7 +10,9 @@ type RequestSyntax struct {
 
 // Unifies the types for all forms of specifying the target of an
 // action: "all", one specific route, both with and without an OCN.
-type SpecSyntax interface{}
+type SpecSyntax interface {
+	Blamer
+}
 
 // Prouced when a request targets all entries. 
 type TargetAllSpecSyntax struct {
@@ -37,21 +39,29 @@ type TargetOcnSpecSyntax struct {
 type ActionSyntax interface{}
 
 type PatchActionSyntax struct {
+	Blamer
+
 	// Properties to be used to update a route's record.
 	PatchProps map[*Token]*Token
 }
 
 type CreateActionSyntax struct {
+	Blamer
+
 	// Properties to be used to create a new route record.
 	CreateProps map[*Token]*Token
 }
 
 type GetActionSyntax struct {
+	Blamer
+
 	// To hold token information for error reporting.
 	GetToken *Token
 }
 
 type DeleteActionSyntax struct {
+	Blamer
+
 	// To hold token information for error reporting.
 	DeleteToken *Token
 }

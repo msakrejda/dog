@@ -28,6 +28,16 @@ Spec:&dogconf.TargetOcnSpecSyntax{
  }
 },
 Action:&dogconf.GetActionSyntax{
+ Blamer:&dogconf.Token{
+  Lexeme:"get",
+  Type:6,
+  Pos:dogconf.Position{
+   Filename:"",
+   Offset:23,
+   Line:1,
+   Column:24
+  }
+ },
  GetToken:&dogconf.Token{
   Lexeme:"get",
   Type:6,

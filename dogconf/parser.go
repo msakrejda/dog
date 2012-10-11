@@ -220,7 +220,7 @@ func parseAction(s *Scanner) (a ActionSyntax, err error) {
 			return nil, err
 		}
 
-		a = &PatchActionSyntax{PatchProps: props}
+		a = &PatchActionSyntax{Blamer: tok, PatchProps: props}
 		goto out
 	case "create":
 		props, err := parseProps(s)
@@ -228,13 +228,13 @@ func parseAction(s *Scanner) (a ActionSyntax, err error) {
 			return nil, err
 		}
 
-		a = &CreateActionSyntax{CreateProps: props}
+		a = &CreateActionSyntax{Blamer: tok, CreateProps: props}
 		goto out
 	case "get":
-		a = &GetActionSyntax{GetToken: tok}
+		a = &GetActionSyntax{Blamer: tok, GetToken: tok}
 		goto out
 	case "delete":
-		a = &DeleteActionSyntax{DeleteToken: tok}
+		a = &DeleteActionSyntax{Blamer: tok, DeleteToken: tok}
 		goto out
 	default:
 		return nil, fmt.Errorf("Expected 'patch', 'create', "+
