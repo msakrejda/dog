@@ -193,7 +193,7 @@ func parseRouteSpec(s *Scanner) (SpecSyntax, error) {
 		var out TargetOcnSpecSyntax
 		out.What = what
 		out.Ocn = tok
-		return out, nil
+		return &out, nil
 	} else {
 		// No OCN specified
 		return &TargetOneSpecSyntax{What: what}, nil

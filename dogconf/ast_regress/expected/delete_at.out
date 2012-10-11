@@ -3,7 +3,7 @@ INPUT<
 
 OUTPUT>
 &dogconf.RequestSyntax{
-Spec:dogconf.TargetOcnSpecSyntax{
+Spec:&dogconf.TargetOcnSpecSyntax{
  TargetOneSpecSyntax:dogconf.TargetOneSpecSyntax{
   What:&dogconf.Token{
    Lexeme:"'foo'",
