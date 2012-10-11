@@ -14,7 +14,7 @@ type SpecSyntax interface {
 	Blamer
 }
 
-// Prouced when a request targets all entries. 
+// Produced when a request targets all entries.
 type TargetAllSpecSyntax struct {
 	// The 'all' token is retained for positioning information in
 	// error reporting.
