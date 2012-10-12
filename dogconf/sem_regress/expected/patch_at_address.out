@@ -1,0 +1,5 @@
+INPUT<
+[route 'bar' @ 1 [patch [addr='123.123.123.125:5445']]]
+
+OUTPUT>
+<nil>

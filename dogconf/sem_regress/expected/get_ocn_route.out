@@ -1,0 +1,5 @@
+INPUT<
+[route 'bar' @ 137 [get]]
+
+OUTPUT>
+<nil>
