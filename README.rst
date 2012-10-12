@@ -1,9 +1,8 @@
-FEMEBE
-======
+Dog
+===
 
-FEMEBE (Front-End, Middle-End, Back-End) is a library for
-introspection and manipulation of the `PostgreSQL wire protocol
-<http://www.postgresql.org/docs/9.2/static/protocol.html>`_,
-colloquially known as FEBE.
+Dog is a Postgres routing proxy. It can allow a user to connect to a
+single Postgres endpoint, but be routed to different backing databases
+for seamless read scalability, failover, upgrades, et cetera.
 
-The library is in development and is not yet ready for general use.
+Dog depends on [FEMEBE](https://github.com/deafbybeheading/fembe).
