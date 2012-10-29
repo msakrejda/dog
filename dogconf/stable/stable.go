@@ -128,29 +128,29 @@ type pp struct {
 // The slice is a stack (LIFO).
 // If more are needed, the cache creates them by calling new.
 type cache struct {
-	mu    sync.Mutex
 	saved []interface{}
 	new   func() interface{}
+	sync.Mutex
 }
 
 func (c *cache) put(x interface{}) {
-	c.mu.Lock()
+	c.Lock()
 	if len(c.saved) < cap(c.saved) {
 		c.saved = append(c.saved, x)
 	}
-	c.mu.Unlock()
+	c.Unlock()
 }
 
 func (c *cache) get() interface{} {
-	c.mu.Lock()
+	c.Lock()
 	n := len(c.saved)
 	if n == 0 {
-		c.mu.Unlock()
+		c.Unlock()
 		return c.new()
 	}
 	x := c.saved[n-1]
 	c.saved = c.saved[0 : n-1]
-	c.mu.Unlock()
+	c.Unlock()
 	return x
 }
 
@@ -238,7 +238,7 @@ func Sprintf(format string, a ...interface{}) string {
 	return s
 }
 
-// Errorf formats according to a format specifier and returns the string 
+// Errorf formats according to a format specifier and returns the string
 // as a value that satisfies error.
 func Errorf(format string, a ...interface{}) error {
 	return errors.New(Sprintf(format, a...))
