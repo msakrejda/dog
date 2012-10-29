@@ -12,14 +12,13 @@ type routingEntry struct {
 }
 
 type routingTable struct {
-	sync.RWMutex
 	tab map[string]*routingEntry
+	sync.RWMutex
 }
 
 func newRoutingTable() *routingTable {
 	return &routingTable{
-		sync.RWMutex{},
-		make(map[string]*routingEntry),
+		tab: make(map[string]*routingEntry),
 	}
 }
 
