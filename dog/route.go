@@ -1,7 +1,7 @@
 package main
 
 import (
-	"femebe/pgproto"
+	"github.com/deafbybeheading/femebe/pgproto"
 	"sync"
 )
 

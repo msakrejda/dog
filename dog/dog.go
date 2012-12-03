@@ -3,9 +3,9 @@ package main
 import (
 	"bufio"
 	"crypto/tls"
-	"femebe"
-	"femebe/pgproto"
 	"fmt"
+	"github.com/deafbybeheading/femebe"
+	"github.com/deafbybeheading/femebe/pgproto"
 	"io"
 	"log"
 	"net"
